@@ -124,6 +124,7 @@ export const seafarerDocuments = mysqlTable("seafarer_documents", {
   docType: varchar("docType", { length: 128 }),
   fileUrl: varchar("fileUrl", { length: 1024 }).notNull(),
   fileName: varchar("fileName", { length: 256 }),
+  expiryDate: timestamp("expiryDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -172,10 +173,19 @@ export const jobApplications = mysqlTable("job_applications", {
   id: int("id").autoincrement().primaryKey(),
   jobId: int("jobId").notNull(),
   seafarerId: int("seafarerId").notNull(),
-  status: mysqlEnum("status", ["pending", "reviewed", "accepted", "rejected"]).default("pending"),
+  status: mysqlEnum("status", ["pending", "reviewed", "shortlisted", "interview", "accepted", "rejected"]).default("pending"),
   coverLetter: text("coverLetter"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+// ─── Application Notes (ATS) ─────────────────────────────────────────────────
+export const applicationNotes = mysqlTable("application_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  applicationId: int("applicationId").notNull(),
+  authorId: int("authorId").notNull(),
+  note: text("note").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 // ─── Verification Requests ────────────────────────────────────────────────────
@@ -259,6 +269,52 @@ export const notifications = mysqlTable("notifications", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+// ─── Posts (Social Feed) ──────────────────────────────────────────────────────
+export const posts = mysqlTable("posts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  content: text("content"),
+  imageUrl: varchar("imageUrl", { length: 1024 }),
+  likesCount: int("likesCount").default(0),
+  commentsCount: int("commentsCount").default(0),
+  isDeleted: boolean("isDeleted").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+// ─── Post Likes ───────────────────────────────────────────────────────────────
+export const postLikes = mysqlTable("post_likes", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("postId").notNull(),
+  userId: int("userId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Post Comments ────────────────────────────────────────────────────────────
+export const postComments = mysqlTable("post_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("postId").notNull(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  isDeleted: boolean("isDeleted").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Crew Assignments ─────────────────────────────────────────────────────────
+export const crewAssignments = mysqlTable("crew_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").notNull(),
+  seafarerId: int("seafarerId").notNull(),
+  companyId: int("companyId").notNull(),
+  rankId: int("rankId"),
+  status: mysqlEnum("status", ["active", "completed", "cancelled"]).default("active"),
+  startDate: timestamp("startDate"),
+  endDate: timestamp("endDate"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -271,6 +327,7 @@ export type Company = typeof companies.$inferSelect;
 export type Seafarer = typeof seafarers.$inferSelect;
 export type JobListing = typeof jobListings.$inferSelect;
 export type JobApplication = typeof jobApplications.$inferSelect;
+export type ApplicationNote = typeof applicationNotes.$inferSelect;
 export type VerificationRequest = typeof verificationRequests.$inferSelect;
 export type Blog = typeof blogs.$inferSelect;
 export type Slider = typeof sliders.$inferSelect;
@@ -278,3 +335,10 @@ export type Page = typeof pages.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type Vessel = typeof vessels.$inferSelect;
 export type SeafarerDocument = typeof seafarerDocuments.$inferSelect;
+export type Post = typeof posts.$inferSelect;
+export type InsertPost = typeof posts.$inferInsert;
+export type PostLike = typeof postLikes.$inferSelect;
+export type PostComment = typeof postComments.$inferSelect;
+export type InsertPostComment = typeof postComments.$inferInsert;
+export type CrewAssignment = typeof crewAssignments.$inferSelect;
+export type InsertCrewAssignment = typeof crewAssignments.$inferInsert;

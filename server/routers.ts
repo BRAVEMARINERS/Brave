@@ -27,6 +27,15 @@ import {
   updateBlog, updateCompany, updateJob, updateJobApplication, updatePage,
   updateSeafarer, updateUserById, updateVerificationRequest,
   upsertCity, upsertCountry, upsertFaq, upsertRank, upsertShipType, upsertSlider, upsertUser,
+  updateDocumentExpiry,
+  // Feed
+  createPost, getPosts, getPostById, deletePost, togglePostLike, getPostLikedByUser, addPostComment, getPostComments, deletePostComment,
+  // Crew
+  createCrewAssignment, getCrewByVessel, getCrewByCompany, updateCrewAssignment, deleteCrewAssignment,
+  // ATS
+  addApplicationNote, getApplicationNotes, getJobApplicationsForCompany,
+  // Advanced Search
+  searchJobs, searchSeafarers,
 } from "./db";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -495,10 +504,183 @@ export const appRouter = router({
       return { success: true };
     }),
     updateApplication: adminProcedure.input(z.object({
-      id: z.number(), status: z.enum(["pending", "reviewed", "accepted", "rejected"]),
+      id: z.number(), status: z.enum(["pending", "reviewed", "shortlisted", "interview", "accepted", "rejected"]),
     })).mutation(async ({ input }) => {
       await updateJobApplication(input.id, { status: input.status });
       return { success: true };
+    }),
+  }),
+
+  // ─── Feed (Social Posts) ────────────────────────────────────────────────────
+  feed: router({
+    list: publicProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input, ctx }) => {
+      const rawPosts = await getPosts({ limit: input?.limit ?? 20 });
+      if (!ctx.user) return rawPosts.map(p => ({ ...p, likedByMe: false }));
+      const likedMap = await Promise.all(
+        rawPosts.map(p => getPostLikedByUser(p.post.id, ctx.user!.id))
+      );
+      return rawPosts.map((p, i) => ({ ...p, likedByMe: likedMap[i] }));
+    }),
+    create: protectedProcedure.input(z.object({
+      content: z.string().max(2000).optional(),
+      imageBase64: z.string().optional(),
+      imageFileName: z.string().optional(),
+      imageFileType: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      if (!input.content && !input.imageBase64) throw new Error("Post must have content or image");
+      let imageUrl: string | undefined;
+      if (input.imageBase64 && input.imageFileName) {
+        const buffer = Buffer.from(input.imageBase64, "base64");
+        const key = `posts/${ctx.user.id}/${nanoid(8)}-${input.imageFileName}`;
+        const result = await storagePut(key, buffer, input.imageFileType || "image/jpeg");
+        imageUrl = result.url;
+      }
+      await createPost({ userId: ctx.user.id, content: input.content, imageUrl });
+      return { success: true };
+    }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+      await deletePost(input.id, ctx.user.id);
+      return { success: true };
+    }),
+    toggleLike: protectedProcedure.input(z.object({ postId: z.number() })).mutation(async ({ ctx, input }) => {
+      return togglePostLike(input.postId, ctx.user.id);
+    }),
+    getComments: publicProcedure.input(z.object({ postId: z.number() })).query(async ({ input }) => {
+      return getPostComments(input.postId);
+    }),
+    addComment: protectedProcedure.input(z.object({
+      postId: z.number(),
+      content: z.string().min(1).max(1000),
+    })).mutation(async ({ ctx, input }) => {
+      await addPostComment({ postId: input.postId, userId: ctx.user.id, content: input.content });
+      return { success: true };
+    }),
+    deleteComment: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+      await deletePostComment(input.id, ctx.user.id);
+      return { success: true };
+    }),
+  }),
+
+  // ─── Crew Management ────────────────────────────────────────────────────────
+  crew: router({
+    getByVessel: protectedProcedure.input(z.object({ vesselId: z.number() })).query(async ({ input }) => {
+      return getCrewByVessel(input.vesselId);
+    }),
+    getByCompany: protectedProcedure.query(async ({ ctx }) => {
+      const company = await getCompanyByUserId(ctx.user.id);
+      if (!company) throw new Error("Company not found");
+      return getCrewByCompany(company.id);
+    }),
+    assign: protectedProcedure.input(z.object({
+      vesselId: z.number(),
+      seafarerId: z.number(),
+      rankId: z.number().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      notes: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const company = await getCompanyByUserId(ctx.user.id);
+      if (!company) throw new Error("Company not found");
+      await createCrewAssignment({
+        ...input,
+        companyId: company.id,
+        startDate: input.startDate ? new Date(input.startDate) : undefined,
+        endDate: input.endDate ? new Date(input.endDate) : undefined,
+      });
+      return { success: true };
+    }),
+    update: protectedProcedure.input(z.object({
+      id: z.number(),
+      status: z.enum(["active", "completed", "cancelled"]).optional(),
+      endDate: z.string().optional(),
+      notes: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, endDate, ...data } = input;
+      await updateCrewAssignment(id, { ...data, endDate: endDate ? new Date(endDate) : undefined });
+      return { success: true };
+    }),
+    remove: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await deleteCrewAssignment(input.id);
+      return { success: true };
+    }),
+  }),
+
+  // ─── Advanced Search ─────────────────────────────────────────────────────────
+  search: router({
+    jobs: publicProcedure.input(z.object({
+      query: z.string().optional(),
+      rankId: z.number().optional(),
+      shipTypeId: z.number().optional(),
+      countryId: z.number().optional(),
+      minSalary: z.number().optional(),
+      maxSalary: z.number().optional(),
+      limit: z.number().optional(),
+    })).query(async ({ input }) => {
+      return searchJobs(input);
+    }),
+    seafarers: publicProcedure.input(z.object({
+      query: z.string().optional(),
+      rankId: z.number().optional(),
+      shipTypeId: z.number().optional(),
+      countryId: z.number().optional(),
+      availabilityStatus: z.string().optional(),
+      minExperienceMonths: z.number().optional(),
+      limit: z.number().optional(),
+    })).query(async ({ input }) => {
+      return searchSeafarers(input);
+    }),
+  }),
+
+  // ─── ATS (Application Tracking) ─────────────────────────────────────────────
+  ats: router({
+    getCompanyApplications: protectedProcedure.input(z.object({
+      status: z.string().optional(),
+      jobId: z.number().optional(),
+    }).optional()).query(async ({ ctx, input }) => {
+      const company = await getCompanyByUserId(ctx.user.id);
+      if (!company) throw new Error("Company not found");
+      return getJobApplicationsForCompany(company.id, input);
+    }),
+    updateStatus: protectedProcedure.input(z.object({
+      id: z.number(),
+      status: z.enum(["pending", "reviewed", "shortlisted", "interview", "accepted", "rejected"]),
+    })).mutation(async ({ input }) => {
+      await updateJobApplication(input.id, { status: input.status });
+      return { success: true };
+    }),
+    addNote: protectedProcedure.input(z.object({
+      applicationId: z.number(),
+      note: z.string().min(1),
+    })).mutation(async ({ ctx, input }) => {
+      await addApplicationNote({ applicationId: input.applicationId, authorId: ctx.user.id, note: input.note });
+      return { success: true };
+    }),
+    getNotes: protectedProcedure.input(z.object({ applicationId: z.number() })).query(async ({ input }) => {
+      return getApplicationNotes(input.applicationId);
+    }),
+  }),
+
+  // ─── Document Expiry ─────────────────────────────────────────────────────────
+  documents: router({
+    updateExpiry: protectedProcedure.input(z.object({
+      documentId: z.number(),
+      expiryDate: z.string(),
+    })).mutation(async ({ input }) => {
+      await updateDocumentExpiry(input.documentId, new Date(input.expiryDate));
+      return { success: true };
+    }),
+    getExpiringMine: protectedProcedure.query(async ({ ctx }) => {
+      const seafarer = await getSeafarerByUserId(ctx.user.id);
+      if (!seafarer) return [];
+      const docs = await getSeafarerDocuments(seafarer.id);
+      const now = new Date();
+      const in60days = new Date();
+      in60days.setDate(in60days.getDate() + 60);
+      return docs.filter(d => d.expiryDate && d.expiryDate <= in60days && d.expiryDate >= now)
+        .map(d => ({
+          ...d,
+          daysLeft: Math.ceil((d.expiryDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+        }));
     }),
   }),
 });

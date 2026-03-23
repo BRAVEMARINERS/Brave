@@ -22,6 +22,8 @@ const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const PageView = lazy(() => import("./pages/PageView"));
 const Feed = lazy(() => import("./pages/Feed"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const CrewManagement = lazy(() => import("./pages/CrewManagement"));
+const ATSBoard = lazy(() => import("./pages/ATSBoard"));
 
 function LoadingFallback() {
   return (
@@ -55,6 +57,8 @@ function Router() {
         <Route path="/page/:slug" component={PageView} />
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/admin/:tab" component={AdminDashboard} />
+        <Route path="/crew" component={CrewManagement} />
+        <Route path="/ats" component={ATSBoard} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
