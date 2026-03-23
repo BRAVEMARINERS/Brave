@@ -23,12 +23,12 @@ export default function CompaniesList() {
       <Navbar />
       <section className="navy-gradient pt-28 pb-16">
         <div className="container">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Maritime Companies</h1>
-          <p className="text-navy-200 font-sans mb-8">Trusted shipping companies worldwide</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">الشركات البحرية</h1>
+          <p className="text-navy-200 font-sans mb-8">شركات الشحن الموثوقة حول العالم</p>
           <div className="relative max-w-xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-navy-400" />
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-navy-400" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search companies..." className="pl-12 h-14 bg-white/10 border-white/20 text-white placeholder:text-navy-400 font-sans text-base" />
+              placeholder="ابحث عن شركة..." className="pr-12 h-14 bg-white/10 border-white/20 text-white placeholder:text-navy-400 font-sans text-base rounded-xl" />
           </div>
         </div>
       </section>
@@ -39,22 +39,22 @@ export default function CompaniesList() {
         ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((c: any) => (
-              <Card key={c.id} className="border-border/50 hover:border-gold-400/30 hover:shadow-lg transition-all">
+              <Card key={c.id} className="border-border/50 hover:border-gold-400/30 hover:shadow-lg transition-all rounded-2xl">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 rounded-xl bg-navy-950 flex items-center justify-center shrink-0">
                       {c.logoUrl ? (
-                        <img src={c.logoUrl} alt={c.nameEn} className="w-full h-full object-cover rounded-xl" />
+                        <img src={c.logoUrl} alt={c.nameAr || c.nameEn} className="w-full h-full object-cover rounded-xl" />
                       ) : (
                         <Building2 className="h-6 w-6 text-gold-400" />
                       )}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-foreground font-sans">{c.nameEn}</h3>
+                        <h3 className="font-bold text-foreground font-sans">{c.nameAr || c.nameEn}</h3>
                         {c.isApproved && <CheckCircle2 className="h-4 w-4 text-gold-500" />}
                       </div>
-                      {c.nameAr && <p className="text-sm text-muted-foreground font-sans">{c.nameAr}</p>}
+                      {c.nameEn && c.nameAr && <p className="text-sm text-muted-foreground font-sans">{c.nameEn}</p>}
                     </div>
                   </div>
                   {c.description && <p className="text-sm text-muted-foreground font-sans mt-4 line-clamp-2">{c.description}</p>}
@@ -77,8 +77,8 @@ export default function CompaniesList() {
         ) : (
           <div className="text-center py-20">
             <Building2 className="h-20 w-20 text-muted-foreground/20 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-foreground font-sans mb-2">No Companies Found</h3>
-            <p className="text-muted-foreground font-sans">Check back later</p>
+            <h3 className="text-xl font-bold text-foreground font-sans mb-2">لا توجد شركات</h3>
+            <p className="text-muted-foreground font-sans">عد لاحقاً</p>
           </div>
         )}
       </div>

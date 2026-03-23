@@ -2,7 +2,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { useParams, Link } from "wouter";
-import { Loader2, ArrowLeft, Calendar } from "lucide-react";
+import { Loader2, ArrowRight, Calendar } from "lucide-react";
 import { Streamdown } from "streamdown";
 
 export default function BlogDetail() {
@@ -18,8 +18,8 @@ export default function BlogDetail() {
   if (!blog) return (
     <div className="min-h-screen bg-background"><Navbar />
       <div className="container pt-28 text-center">
-        <h1 className="text-2xl font-bold text-foreground">Article not found</h1>
-        <Link href="/blog" className="text-gold-500 font-sans mt-4 inline-block">Back to Blog</Link>
+        <h1 className="text-2xl font-bold text-foreground">المقال غير موجود</h1>
+        <Link href="/blog" className="text-gold-500 font-sans mt-4 inline-block">العودة للمدونة</Link>
       </div>
     </div>
   );
@@ -29,20 +29,20 @@ export default function BlogDetail() {
       <Navbar />
       <article className="container pt-28 pb-16 max-w-3xl mx-auto">
         <Link href="/blog" className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-sans mb-6">
-          <ArrowLeft className="h-4 w-4" /> Back to Blog
+          <ArrowRight className="h-4 w-4" /> العودة للمدونة
         </Link>
         {blog.imageUrl && (
           <div className="rounded-2xl overflow-hidden mb-8 h-64 sm:h-80">
-            <img src={blog.imageUrl} alt={blog.titleEn || ""} className="w-full h-full object-cover" />
+            <img src={blog.imageUrl} alt={blog.titleAr || blog.titleEn || ""} className="w-full h-full object-cover" />
           </div>
         )}
-        <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{blog.titleEn}</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{blog.titleAr || blog.titleEn}</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground font-sans mb-8">
           <Calendar className="h-4 w-4" />
-          {blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString() : "Draft"}
+          {blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString("ar") : "مسودة"}
         </div>
         <div className="prose prose-lg max-w-none">
-          <Streamdown>{blog.contentEn || ""}</Streamdown>
+          <Streamdown>{blog.contentAr || blog.contentEn || ""}</Streamdown>
         </div>
       </article>
       <Footer />

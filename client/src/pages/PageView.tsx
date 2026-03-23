@@ -19,9 +19,9 @@ export default function PageView() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container pt-28 pb-16 max-w-3xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-8">{page?.titleEn || slug}</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-8">{page?.titleAr || page?.titleEn || slug}</h1>
         <div className="prose prose-lg max-w-none">
-          <Streamdown>{page?.contentEn || "Page content coming soon."}</Streamdown>
+          <Streamdown>{page?.contentAr || page?.contentEn || "محتوى الصفحة قادم قريباً."}</Streamdown>
         </div>
       </div>
       <Footer />

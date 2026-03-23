@@ -20,6 +20,7 @@ const CompaniesList = lazy(() => import("./pages/CompaniesList"));
 const BlogList = lazy(() => import("./pages/BlogList"));
 const BlogDetail = lazy(() => import("./pages/BlogDetail"));
 const PageView = lazy(() => import("./pages/PageView"));
+const Feed = lazy(() => import("./pages/Feed"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 
 function LoadingFallback() {
@@ -27,7 +28,7 @@ function LoadingFallback() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-accent" />
-        <p className="text-muted-foreground font-sans">Loading...</p>
+        <p className="text-muted-foreground font-sans">جاري التحميل...</p>
       </div>
     </div>
   );
@@ -50,6 +51,7 @@ function Router() {
         <Route path="/companies" component={CompaniesList} />
         <Route path="/blog" component={BlogList} />
         <Route path="/blog/:slug" component={BlogDetail} />
+        <Route path="/feed" component={Feed} />
         <Route path="/page/:slug" component={PageView} />
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/admin/:tab" component={AdminDashboard} />

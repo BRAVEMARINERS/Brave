@@ -1,10 +1,11 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = "Brave Marines <onboarding@resend.dev>";
 
 export async function sendWelcomeEmail(to: string, name: string) {
   try {
+    if (!resend) { console.log('[Email] Resend not configured, skipping email'); return false; }
     await resend.emails.send({
       from: FROM,
       to,
@@ -36,6 +37,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   try {
+    if (!resend) { console.log('[Email] Resend not configured, skipping email'); return false; }
     await resend.emails.send({
       from: FROM,
       to,
@@ -64,6 +66,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
 
 export async function sendVerificationStatusEmail(to: string, name: string, approved: boolean) {
   try {
+    if (!resend) { console.log('[Email] Resend not configured, skipping email'); return false; }
     await resend.emails.send({
       from: FROM,
       to,

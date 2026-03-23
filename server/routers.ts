@@ -21,7 +21,7 @@ import {
   getCompanies, getCompanyById, getCompanyByUserId,
   getJobApplications, getJobById, getJobs, getSeafarerApplications,
   getPageBySlug, getSeafarerById, getSeafarerByUserId, getSeafarerDocuments,
-  getSeafarerShipTypes, getSeafarers, getUserByEmail, getUserById,
+  getSeafarerShipTypes, getSeafarers, getUserByEmail, getUserById, getUserByPhone,
   getUserNotifications, getVesselsByCompany, getVerificationByUserId, getVerificationRequests,
   markAllNotificationsRead, markNotificationRead, countUnreadNotifications,
   updateBlog, updateCompany, updateJob, updateJobApplication, updatePage,
@@ -53,20 +53,26 @@ export const appRouter = router({
       email: z.string().email(),
       password: z.string().min(6),
       accountType: z.enum(["seafarer", "company"]),
+      phone: z.string().optional(),
     })).mutation(async ({ ctx, input }) => {
       const existing = await getUserByEmail(input.email);
       if (existing) throw new Error("Email already registered");
+      if (input.phone) {
+        const existingPhone = await getUserByPhone(input.phone);
+        if (existingPhone) throw new Error("Phone number already registered");
+      }
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = `email_${nanoid(16)}`;
       await upsertUser({
         openId, name: input.name, email: input.email,
+        phone: input.phone || null,
         loginMethod: "email", lastSignedIn: new Date(),
       });
       const user = await getUserByEmail(input.email);
       if (user) {
         await updateUserById(user.id, { passwordHash, accountType: input.accountType });
         if (input.accountType === "seafarer") {
-          await createSeafarer({ userId: user.id, email: input.email, firstNameEn: input.name });
+          await createSeafarer({ userId: user.id, email: input.email, phone: input.phone, firstNameEn: input.name });
         }
         sendWelcomeEmail(input.email, input.name).catch(() => {});
         // Create session cookie so user is logged in immediately
@@ -77,10 +83,16 @@ export const appRouter = router({
       return { success: true, openId };
     }),
     login: publicProcedure.input(z.object({
-      email: z.string().email(),
+      email: z.string(),
       password: z.string(),
     })).mutation(async ({ ctx, input }) => {
-      const user = await getUserByEmail(input.email);
+      // Support login by email or phone
+      let user;
+      if (input.email.includes("@")) {
+        user = await getUserByEmail(input.email);
+      } else {
+        user = await getUserByPhone(input.email);
+      }
       if (!user || !user.passwordHash) throw new Error("Invalid credentials");
       const valid = await bcrypt.compare(input.password, user.passwordHash);
       if (!valid) throw new Error("Invalid credentials");
